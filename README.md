@@ -29,10 +29,11 @@ SET utilization = (
             UNION ALL
             -- Calculate utilization from the ip_audit_backbone_config_feed table
             SELECT 
-                c.subnet_id, 
+                s.subnet_id, 
                 SUM(c.tail - c.head + 1) AS used_capacity
             FROM ng_inam.ip_audit_backbone_config_feed c
-            WHERE c.subnet_id IN (
+            JOIN ng_inam.subnet s ON s.cidr = c.cidr
+            WHERE s.subnet_id IN (
                 WITH RECURSIVE parent AS (
                     SELECT subnet_id, parent_id, name 
                     FROM ng_inam.subnet
@@ -44,7 +45,7 @@ SET utilization = (
                 )
                 SELECT subnet_id FROM parent
             )
-            GROUP BY c.subnet_id
+            GROUP BY s.subnet_id
         ) AS combined_utilization
     ) / (s.tail_int - s.head_int + 1) * 100
 )
