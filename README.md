@@ -50,4 +50,4 @@ SET utilization = (
         ) AS combined_utilization
     ) / (s.tail_int - s.head_int + 1) * 100
 )
-WHERE s.subnet_id IN (:subnetIds);
+WHERE s.subnet_id IN (SELECT subnet_id FROM ng_inam.subnet);
