@@ -26,9 +26,7 @@ SET utilization = (
                 SELECT subnet_id FROM parent
             )
             GROUP BY a.subnet_id
-
             UNION ALL
-
             -- Calculate utilization from the ip_audit_backbone_config_feed table
             SELECT 
                 c.subnet_id, 
