@@ -29,10 +29,18 @@ merged_ranges AS (
         tail, 
         cidr
     FROM combined_ranges
-    ORDER BY cidr, head, tail
+),
+range_data AS (
+    SELECT 
+        s.subnet_id, 
+        (s.tail_int - s.head_int + 1) AS total_range,  
+        SUM(mr.tail - mr.head + 1) AS assigned_range  
+    FROM ng_inam.subnet s
+    LEFT JOIN merged_ranges mr ON mr.head >= s.head_int AND mr.tail <= s.tail_int
+    WHERE s.subnet_id = 1677
+    GROUP BY s.subnet_id, s.head_int, s.tail_int
 )
-SELECT 
-    cidr,
-    head AS merged_head,
-    tail AS merged_tail
-FROM merged_ranges;
+UPDATE ng_inam.subnet s
+SET utilization = (rd.assigned_range::float / rd.total_range::float) * 100
+FROM range_data rd
+WHERE s.subnet_id = rd.subnet_id;
