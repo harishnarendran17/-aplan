@@ -19,25 +19,25 @@ filtered_backbone AS (
         AND (SELECT tail_int FROM ng_inam.subnet WHERE subnet_id = 1677)
 ),
 combined_ranges AS (
-    SELECT head, tail
-    FROM filtered_assignment
-    UNION ALL
-    SELECT head, tail
-    FROM filtered_backbone
+    SELECT head, tail FROM filtered_assignment
+    UNION
+    SELECT head, tail FROM filtered_backbone
 ),
 merged_ranges AS (
-    SELECT DISTINCT
-        MIN(head) OVER (PARTITION BY overlap_group) AS head,
-        MAX(tail) OVER (PARTITION BY overlap_group) AS tail
-    FROM (
-        SELECT *,
-            SUM(CASE WHEN head > MAX(tail) OVER (ORDER BY head) THEN 1 ELSE 0 END)
-            OVER (ORDER BY head) AS overlap_group
-        FROM combined_ranges
-    ) grouped_ranges
+    SELECT DISTINCT 
+        head, 
+        tail
+    FROM combined_ranges
+    ORDER BY head, tail
+),
+merged_ranges_final AS (
+    SELECT 
+        MIN(head) AS merged_head,
+        MAX(tail) AS merged_tail
+    FROM merged_ranges
+    GROUP BY merged_ranges.head
 )
 SELECT 
-    (SUM(merged_ranges.tail - merged_ranges.head + 1) * 100.0) / 
-    (SELECT tail_int - head_int + 1 
-     FROM ng_inam.subnet WHERE subnet_id = 1677) AS utilization_percentage
-FROM merged_ranges;
+    (SUM(merged_ranges_final.merged_tail - merged_ranges_final.merged_head + 1) * 100.0) /
+    (SELECT tail_int - head_int + 1 FROM ng_inam.subnet WHERE subnet_id = 1677) AS utilization_percentage
+FROM merged_ranges_final;
